@@ -60,13 +60,20 @@
         .project-card h3 { margin: 0 0 8px; font-size: 16px; }
         .project-actions { display: flex; gap: 6px; margin-top: 16px; flex-wrap: wrap; }
         .timer-display { font-size: 64px; font-weight: 300; text-align: center; margin: 32px 0; color: var(--ink); font-family: 'JetBrains Mono', monospace; letter-spacing: 3px; }
-        .sticky-timer { position: sticky; top: 0; z-index: 100; background: var(--surface-raised); border-bottom: 1px solid var(--border); padding: 8px 56px; margin: 0 -56px 12px; box-shadow: var(--shadow); }
+        .sticky-timer { position: sticky; top: 0; z-index: 100; background: #1e293b; color: #fff; border-bottom: 3px solid var(--accent); padding: 8px 56px; margin: 0 -56px 12px; box-shadow: 0 4px 12px rgba(15,23,42,0.25); }
         .sticky-row { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; }
         .sticky-info { display: flex; align-items: center; gap: 8px; font-size: 14px; flex-wrap: wrap; }
         .chip { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; white-space: nowrap; font-family: inherit; }
         .chip-on { background: var(--success-light); color: var(--success); border: 1px solid var(--success-border); }
         .chip-off { background: var(--surface); color: var(--ink-subtle); border: 1px solid var(--border); font-variant-numeric: tabular-nums; }
-        .sticky-timer .timer-display { font-size: 28px; margin: 0; letter-spacing: 1px; }
+        .sticky-timer .timer-display { font-size: 30px; margin: 0; letter-spacing: 1px; color: #fff; }
+        .sticky-timer .sticky-info { color: #e2e8f0; }
+        .sticky-timer .chip-off { background: rgba(255,255,255,0.12); color: #fff; border-color: rgba(255,255,255,0.3); }
+        .sticky-timer .timer-controls { flex: 1 1 240px; }
+        .sticky-timer .timer-controls .btn-lg { flex: 1; }
+        .btn-ondark { background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.35); box-shadow: none; }
+        .btn-ondark:hover { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.5); }
+        .btn-lg { padding: 14px 32px; font-size: 18px; font-weight: 700; min-width: 120px; justify-content: center; border-radius: var(--radius); }
         .sticky-timer .timer-controls { margin: 0; gap: 6px; }
         .timer-controls { display: flex; gap: 10px; justify-content: center; margin-bottom: 32px; flex-wrap: wrap; }
         .visitor-count { text-align: center; font-size: 15px; color: var(--ink-subtle); margin-bottom: 16px; font-weight: 500; }
@@ -794,14 +801,12 @@
                                     <div className="sticky-row">
                                         <div className="sticky-info">
                                             <strong>Visitor #{encountered + 1}</strong>
-                                            {project.enableInterviews && (interviewEligible
-                                                ? <span className="chip chip-on">{'\uD83C\uDFA4'} Can interview</span>
-                                                : <span className="chip chip-off">{'\u23F3'} {cooldownRemaining ? fmtCd(cooldownRemaining) : 'interview in progress'}</span>)}
+                                            {project.enableInterviews && !interviewEligible && <span className="chip chip-off">{'\u23F3'} {cooldownRemaining ? fmtCd(cooldownRemaining) : 'interview in progress'}</span>}
                                         </div>
                                         <div className="timer-display">{formatTime(currentTimer)}</div>
                                         <div className="timer-controls">
-                                            <button className={timerRunning ? "btn btn-sm btn-danger" : "btn btn-sm btn-success"} onClick={timerRunning ? stopTimer : startTimer}>{timerRunning ? 'Stop' : 'Resume'}</button>
-                                            <button className="btn btn-sm" style={dqMode ? { background: 'var(--danger-light)', color: 'var(--danger)', borderColor: 'var(--danger-border)' } : {}} onClick={() => setDqMode(!dqMode)}>{dqMode ? 'Cancel DQ' : 'Disqualify'}</button>
+                                            <button className={timerRunning ? "btn btn-lg btn-danger" : "btn btn-lg btn-success"} onClick={timerRunning ? stopTimer : startTimer}>{timerRunning ? 'Stop' : 'Resume'}</button>
+                                            <button className="btn btn-sm btn-ondark" style={dqMode ? { background: 'var(--danger-light)', color: 'var(--danger)', borderColor: 'var(--danger-border)' } : {}} onClick={() => setDqMode(!dqMode)}>{dqMode ? 'Cancel DQ' : 'Disqualify'}</button>
                                         </div>
                                     </div>
                                 </div>
