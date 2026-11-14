@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Museum Visitor Tracker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --ink: #1c1917; --ink-subtle: #57534e; --ink-muted: #a8a29e;
+            --surface: #fafaf9; --surface-raised: #ffffff;
+            --border: #e7e5e4; --border-strong: #d6d3d1;
+            --accent: #2563eb; --accent-hover: #1d4ed8; --accent-light: #eff6ff; --accent-border: #bfdbfe;
+            --success: #16a34a; --success-light: #f0fdf4; --success-border: #bbf7d0;
+            --danger: #dc2626; --danger-light: #fef2f2; --danger-border: #fecaca;
+            --warning: #d97706; --warning-light: #fffbeb; --warning-border: #fde68a;
+            --purple: #7c3aed; --purple-light: #f5f3ff; --purple-border: #ddd6fe;
+            --radius: 10px; --radius-sm: 6px;
+            --shadow-sm: 0 1px 2px rgba(28,25,23,0.04);
+            --shadow: 0 1px 3px rgba(28,25,23,0.06), 0 1px 2px rgba(28,25,23,0.04);
+            --shadow-md: 0 4px 12px rgba(28,25,23,0.07);
+            --transition: 150ms ease;
+        }
+        body { font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--surface); min-height: 100vh; color: var(--ink); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 1100px; margin: 0 auto; background: var(--surface-raised); min-height: 100vh; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+        .content-wrapper { padding: 40px 56px 60px; }
+        @media (max-width: 768px) { .content-wrapper { padding: 24px 20px 40px; } .sticky-timer { padding: 8px 20px !important; margin: 0 -20px 12px !important; } }
+        h1 { color: var(--ink); margin-bottom: 4px; font-size: 26px; font-weight: 700; letter-spacing: -0.4px; }
+        h2 { color: var(--ink); margin: 40px 0 16px; font-size: 17px; font-weight: 600; }
+        h3 { color: var(--ink); margin: 16px 0 10px; font-size: 15px; font-weight: 600; }
+        .subtitle { color: var(--ink-subtle); font-size: 14px; margin-bottom: 28px; }
+        .btn { padding: 8px 18px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; font-weight: 500; font-family: inherit; transition: all var(--transition); background: var(--surface-raised); color: var(--ink); box-shadow: var(--shadow-sm); display: inline-flex; align-items: center; gap: 6px; line-height: 1.4; }
+        .btn:hover { background: var(--surface); border-color: var(--border-strong); }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+        .btn-success { background: var(--success); color: #fff; border-color: var(--success); }
+        .btn-success:hover { background: #15803d; }
+        .btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+        .btn-danger:hover { background: #b91c1c; }
+        .btn-warning { background: var(--warning); color: #fff; border-color: var(--warning); }
+        .btn-warning:hover { background: #b45309; }
+        .btn-sm { padding: 5px 12px; font-size: 12px; }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 6px; font-weight: 500; color: var(--ink-subtle); font-size: 13px; }
+        input[type="text"], input[type="number"], select, textarea { width: 100%; padding: 9px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit; transition: all var(--transition); background: var(--surface-raised); color: var(--ink); }
+        input:hover, select:hover, textarea:hover { border-color: var(--border-strong); }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.08); }
+        textarea { min-height: 90px; resize: vertical; }
+        .project-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-top: 20px; }
+        .project-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; background: var(--surface-raised); transition: all var(--transition); cursor: pointer; }
+        .project-card:hover { box-shadow: var(--shadow-md); border-color: var(--border-strong); }
+        .project-card.archived { opacity: 0.5; }
+        .project-card h3 { margin: 0 0 8px; font-size: 16px; }
+        .project-actions { display: flex; gap: 6px; margin-top: 16px; flex-wrap: wrap; }
+        .timer-display { font-size: 64px; font-weight: 300; text-align: center; margin: 32px 0; color: var(--ink); font-family: 'JetBrains Mono', monospace; letter-spacing: 3px; }
+        .sticky-timer { position: sticky; top: 0; z-index: 100; background: #4a90f0; color: #fff; border-bottom: 3px solid #2563eb; padding: 8px 56px; margin: 0 -56px 12px; box-shadow: 0 4px 12px rgba(37,99,235,0.25); }
+        .sticky-row { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; }
+        .sticky-info { display: flex; align-items: center; gap: 8px; font-size: 14px; flex-wrap: wrap; }
+        .chip { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; white-space: nowrap; font-family: inherit; }
+        .chip-on { background: var(--success-light); color: var(--success); border: 1px solid var(--success-border); }
+        .chip-off { background: var(--surface); color: var(--ink-subtle); border: 1px solid var(--border); font-variant-numeric: tabular-nums; }
+        .sticky-timer .timer-display { font-size: 30px; margin: 0; letter-spacing: 1px; color: #fff; }
+        .sticky-timer .sticky-info { color: #fff; font-weight: 600; }
+        .sticky-timer .chip-off { background: rgba(255,255,255,0.12); color: #fff; border-color: rgba(255,255,255,0.3); }
+        .sticky-timer .timer-controls { flex: 1 1 240px; }
+        .sticky-timer .timer-controls .btn-lg { flex: 1; }
+        .btn-ondark { background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.35); box-shadow: none; }
+        .btn-ondark:hover { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.5); }
+        .btn-lg { padding: 14px 32px; font-size: 18px; font-weight: 700; min-width: 120px; justify-content: center; border-radius: var(--radius); }
+        .sticky-timer .timer-controls { margin: 0; gap: 6px; }
+        .timer-controls { display: flex; gap: 10px; justify-content: center; margin-bottom: 32px; flex-wrap: wrap; }
+        .visitor-count { text-align: center; font-size: 15px; color: var(--ink-subtle); margin-bottom: 16px; font-weight: 500; }
+        .interview-badge { background: var(--warning-light); color: var(--warning); padding: 8px 16px; border-radius: var(--radius-sm); font-weight: 600; display: inline-block; margin: 10px 0; border: 1px solid var(--warning-border); font-size: 13px; }
+        .field-builder { border: 1px solid var(--border); padding: 20px; border-radius: var(--radius); margin-bottom: 20px; background: var(--surface); }
+        .field-list { margin-top: 16px; }
+        .field-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 6px; }
+        .field-item:hover { border-color: var(--border-strong); }
+        .field-info strong { color: var(--ink); font-weight: 500; font-size: 14px; }
+        .field-type { color: var(--ink-muted); font-size: 12px; margin-left: 10px; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 16px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; font-size: 13px; }
+        th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: var(--surface); color: var(--ink-subtle); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+        td { color: var(--ink); background: var(--surface-raised); }
+        tr:hover td { background: var(--surface); }
+        tr:last-child td { border-bottom: none; }
+        tr.disqualified td { background: var(--danger-light); color: var(--ink-subtle); }
+        tr.disqualified:hover td { background: #fde8e8; }
+        .session-info { background: var(--accent-light); padding: 16px 20px; border-radius: var(--radius); margin-bottom: 24px; border: 1px solid var(--accent-border); }
+        .session-info p { margin: 3px 0; color: var(--accent); font-size: 13px; }
+        .session-info strong { font-weight: 600; }
+        .nav-breadcrumb { background: var(--surface); padding: 12px 56px; font-size: 13px; border-bottom: 1px solid var(--border); }
+        .nav-breadcrumb button { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 13px; font-weight: 500; font-family: inherit; padding: 0; }
+        .nav-breadcrumb button:hover { text-decoration: underline; }
+        .dictation-controls { display: flex; gap: 10px; margin-top: 8px; align-items: center; }
+        .recording { color: var(--danger); font-weight: 600; animation: blink 1s infinite; font-size: 12px; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(28,25,23,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(3px); }
+        .modal { background: var(--surface-raised); padding: 28px; border-radius: 14px; max-width: 900px; width: 92%; max-height: 90vh; overflow-y: auto; box-shadow: 0 12px 40px rgba(28,25,23,0.15); }
+        .modal h2 { margin-top: 0; }
+        .export-preview { margin-top: 16px; max-height: 450px; overflow: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+        .inline-confirm { background: var(--warning-light); border: 1px solid var(--warning-border); border-radius: var(--radius); padding: 14px 18px; margin: 12px 0; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+        .inline-confirm p { margin: 0; font-size: 14px; font-weight: 500; color: var(--warning); }
+        .inline-confirm .confirm-actions { display: flex; gap: 8px; }
+        .inline-notification { border-radius: var(--radius); padding: 12px 18px; margin: 12px 0; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; animation: slideIn 0.2s ease; }
+        .inline-notification.success { background: var(--success-light); border: 1px solid var(--success-border); color: var(--success); }
+        .inline-notification.error { background: var(--danger-light); border: 1px solid var(--danger-border); color: var(--danger); }
+        .inline-notification.warning { background: var(--warning-light); border: 1px solid var(--warning-border); color: var(--warning); }
+        .inline-notification.info { background: var(--accent-light); border: 1px solid var(--accent-border); color: var(--accent); }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+        .button-group { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
+        .edit-cell { cursor: pointer; transition: background var(--transition); }
+        .edit-cell:hover { background: var(--surface) !important; }
+        .edit-input { width: 100%; padding: 6px 10px; border: 1px solid var(--accent); border-radius: 4px; font-size: 13px; font-family: inherit; }
+        .status-badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+        .status-badge.completed { background: var(--success-light); color: var(--success); }
+        .status-badge.active { background: var(--accent-light); color: var(--accent); }
+        .status-badge.paused { background: var(--warning-light); color: var(--warning); }
+        .empty-state { text-align: center; padding: 48px 20px; color: var(--ink-muted); font-size: 14px; }
+        .session-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 10px; background: var(--surface-raised); transition: all var(--transition); }
+        .session-card:hover { border-color: var(--border-strong); box-shadow: var(--shadow); }
+        .session-card-meta { display: flex; gap: 20px; margin-top: 8px; font-size: 13px; color: var(--ink-subtle); flex-wrap: wrap; }
+        .session-card-actions { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+        .session-expand-toggle { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 13px; font-weight: 500; font-family: inherit; padding: 4px 0; display: inline-flex; align-items: center; gap: 4px; }
+        .session-expand-toggle:hover { text-decoration: underline; }
+        .session-data-inline { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
+        .checkbox-label { display: flex; align-items: center; gap: 8px; font-weight: 500; color: var(--ink-subtle); font-size: 13px; cursor: pointer; }
+        .checkbox-label input[type="checkbox"] { width: auto; }
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 28px; }
+        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+        .stat-value { font-size: 22px; font-weight: 700; color: var(--ink); font-family: 'JetBrains Mono', monospace; }
+        .stat-label { font-size: 12px; color: var(--ink-muted); font-weight: 500; margin-top: 2px; }
+        .criteria-section { background: var(--purple-light); border: 1px solid var(--purple-border); border-radius: var(--radius); padding: 20px; margin-top: 16px; }
+        .criteria-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 6px; }
+        .dq-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; text-transform: uppercase; background: var(--danger-light); color: var(--danger); border: 1px solid var(--danger-border); }
+        .dq-panel { background: var(--danger-light); border: 1px solid var(--danger-border); border-radius: var(--radius); padding: 16px 20px; margin: 16px 0; }
+        .dq-panel p { color: var(--danger); font-size: 14px; font-weight: 500; margin-bottom: 10px; }
+        .interview-reassign { background: var(--purple-light); border: 1px solid var(--purple-border); border-radius: var(--radius); padding: 16px 20px; margin: 12px 0; }
+        .interview-reassign p { color: var(--purple); font-size: 14px; font-weight: 500; margin-bottom: 10px; }
+        .radio-group { display: flex; flex-direction: column; gap: 8px; }
+        .radio-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink); cursor: pointer; padding: 6px 10px; border-radius: var(--radius-sm); transition: background var(--transition); }
+        .radio-label:hover { background: rgba(0,0,0,0.03); }
+        .radio-label input[type="radio"] { width: auto; margin: 0; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        const Storage = {
+            getProjects: () => JSON.parse(localStorage.getItem('vt_projects') || '[]'),
+            saveProjects: (projects) => localStorage.setItem('vt_projects', JSON.stringify(projects)),
+            getSessions: (projectId) => JSON.parse(localStorage.getItem('vt_sessions_' + projectId) || '[]'),
+            upsertSession: (projectId, session) => {
+                const key = 'vt_sessions_' + projectId;
+                const sessions = JSON.parse(localStorage.getItem(key) || '[]');
+                const idx = sessions.findIndex(s => s.id === session.id);
+                if (idx >= 0) { sessions[idx] = session; } else { sessions.push(session); }
+                localStorage.setItem(key, JSON.stringify(sessions));
+                return sessions;
+            },
+            deleteSession: (projectId, sessionId) => {
+                const key = 'vt_sessions_' + projectId;
+                const sessions = JSON.parse(localStorage.getItem(key) || '[]').filter(s => s.id !== sessionId);
+                localStorage.setItem(key, JSON.stringify(sessions));
+                return sessions;
+            }
+        };
+
+        function useNotification() {
+            const [n, setN] = useState(null); const t = useRef(null);
+            const notify = useCallback((msg, type, dur) => { if (t.current) clearTimeout(t.current); setN({ message: msg, type: type || 'info' }); t.current = setTimeout(() => setN(null), dur || 4000); }, []);
+            const Bar = () => n ? (<div className={'inline-notification ' + n.type}><span>{n.message}</span><button onClick={() => { clearTimeout(t.current); setN(null); }} style={{ marginLeft: 'auto', padding: '2px 8px', cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'inherit', fontSize: '12px', color: 'inherit', opacity: 0.7 }}>{'\u2715'}</button></div>) : null;
+            return { notify, NotificationBar: Bar };
+        }
+        function useConfirm() {
+            const [s, setS] = useState(null);
+            const confirm = useCallback((msg, cb) => setS({ msg, cb }), []);
+            const Bar = () => s ? (<div className="inline-confirm"><p>{s.msg}</p><div className="confirm-actions"><button className="btn btn-danger btn-sm" onClick={() => { const cb = s.cb; setS(null); cb(); }}>Confirm</button><button className="btn btn-sm" onClick={() => setS(null)}>Cancel</button></div></div>) : null;
+            return { confirm, ConfirmBar: Bar };
+        }
+        function formatTime(seconds) { const m = Math.floor(seconds / 60); const s = seconds % 60; return m.toString().padStart(2, '0') + ':' + s.toString().padStart(2, '0'); }
+        function dqWhenOf(o) { return o.dqWhen || (o.dq ? 'checked' : null); }
+        function fmtVal(val) { return Array.isArray(val) ? val.join(', ') : (val || ''); }
+        function ordinalSuffix(n) { const s = ['th','st','nd','rd']; const v = n % 100; return s[(v - 20) % 10] || s[v] || s[0]; }
+
+        // Determine if a visitor number should be interviewed, considering DQ reassignment
+        function shouldInterview(visitorNum, project, visitors, pendingInterview) {
+            if (!project.enableInterviews) return false;
+            // If there's a pending interview carry-over from a DQ'd interview visitor
+            if (pendingInterview) return true;
+            return visitorNum % project.interviewNth === 0;
+        }
+
+        function App() {
+            const [view, setView] = useState('projects');
+            const [projects, setProjects] = useState(Storage.getProjects());
+            const [currentProject, setCurrentProject] = useState(null);
+            const [currentSession, setCurrentSession] = useState(null);
+            const [showArchived, setShowArchived] = useState(false);
+            useEffect(() => { Storage.saveProjects(projects); }, [projects]);
+
+            const createProject = (data) => { setProjects([...projects, { id: Date.now().toString(), ...data, createdAt: new Date().toISOString(), archived: false }]); setView('projects'); };
+            const updateProject = (id, data) => { const u = projects.map(p => p.id === id ? { ...p, ...data } : p); setProjects(u); setCurrentProject(u.find(p => p.id === id)); setView('project'); };
+            const archiveProject = (id) => setProjects(projects.map(p => p.id === id ? { ...p, archived: !p.archived } : p));
+            const deleteProject = (id) => { setProjects(projects.filter(p => p.id !== id)); localStorage.removeItem('vt_sessions_' + id); };
+            const filtered = showArchived ? projects : projects.filter(p => !p.archived);
+
+            return (
+                <div className="container">
+                    {view === 'projects' && <ProjectsView projects={filtered} showArchived={showArchived} setShowArchived={setShowArchived} onCreateProject={() => setView('createProject')} onOpenProject={(p) => { setCurrentProject(p); setView('project'); }} onEditProject={(p) => { setCurrentProject(p); setView('editProject'); }} onArchiveProject={archiveProject} onDeleteProject={deleteProject} />}
+                    {view === 'createProject' && <CreateProjectView onSave={createProject} onCancel={() => setView('projects')} />}
+                    {view === 'editProject' && currentProject && <CreateProjectView existingProject={currentProject} onSave={(d) => updateProject(currentProject.id, d)} onCancel={() => setView('project')} />}
+                    {view === 'project' && currentProject && <ProjectView project={currentProject} onBack={() => setView('projects')} onEdit={() => setView('editProject')} onStartSession={(s) => { setCurrentSession(s); setView('session'); }} />}
+                    {view === 'session' && currentSession && currentProject && <SessionView project={currentProject} session={currentSession} onBack={() => { setCurrentSession(null); setView('project'); }} />}
+                </div>
+            );
+        }
+        function ProjectsView({ projects, showArchived, setShowArchived, onCreateProject, onOpenProject, onEditProject, onArchiveProject, onDeleteProject }) {
+            const { confirm, ConfirmBar } = useConfirm();
+            return (
+                <div className="content-wrapper">
+                    <h1>Visitor Tracker</h1>
+                    <p className="subtitle">Track visitor dwell times and conduct systematic observations and interviews at exhibits</p>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                        <button className="btn btn-primary" onClick={onCreateProject}>+ New Project</button>
+                        <button className="btn" onClick={() => setShowArchived(!showArchived)}>{showArchived ? 'Hide Archived' : 'Show Archived'}</button>
+                    </div>
+                    <ConfirmBar />
+                    {projects.length === 0 ? (<div className="empty-state">No projects yet. Create one to get started.</div>) : (
+                        <div className="project-list">{projects.map(project => (
+                            <div key={project.id} className={'project-card' + (project.archived ? ' archived' : '')} onClick={() => onOpenProject(project)}>
+                                <h3>{project.name}</h3>
+                                {project.archived && <span style={{ color: 'var(--danger)', fontSize: '11px', fontWeight: 600 }}>[Archived]</span>}
+                                <p style={{ color: 'var(--ink-muted)', fontSize: '13px', margin: '6px 0' }}>
+                                    {project.fields.length} field{project.fields.length !== 1 ? 's' : ''}
+                                    {project.enableInterviews && (' \u00B7 Observe every ' + project.interviewNth + ordinalSuffix(project.interviewNth) + ' visitor')}
+                                </p>
+                                {project.qualificationCriteria && (project.qualificationCriteria.minTime > 0 || (project.qualificationCriteria.checklist && project.qualificationCriteria.checklist.length > 0)) && (
+                                    <p style={{ color: 'var(--purple)', fontSize: '12px', fontWeight: 500 }}>Qualification criteria active</p>
+                                )}
+                                <p style={{ color: 'var(--ink-muted)', fontSize: '11px', marginTop: '4px' }}>Created {new Date(project.createdAt).toLocaleDateString()}</p>
+                                <div className="project-actions" onClick={e => e.stopPropagation()}>
+                                    <button className="btn btn-sm" onClick={() => onEditProject(project)}>Edit</button>
+                                    <button className="btn btn-sm" onClick={() => onArchiveProject(project.id)}>{project.archived ? 'Unarchive' : 'Archive'}</button>
+                                    <button className="btn btn-sm" style={{ color: 'var(--danger)' }} onClick={() => confirm('Delete "' + project.name + '"? All data will be lost.', () => onDeleteProject(project.id))}>Delete</button>
+                                </div>
+                            </div>
+                        ))}</div>
+                    )}
+                </div>
+            );
+        }
+        function CreateProjectView({ onSave, onCancel, existingProject }) {
+            const ep = existingProject || null;
+            const [name, setName] = useState(ep ? ep.name : '');
+            const [enableInterviews, setEnableInterviews] = useState(ep ? ep.enableInterviews : true);
+            const [interviewNth, setInterviewNth] = useState(ep ? ep.interviewNth : 5);
+            const [cooldownEnabled, setCooldownEnabled] = useState(ep ? !!ep.cooldownEnabled : true);
+            const [cooldownMins, setCooldownMins] = useState(ep && ep.cooldownMins ? ep.cooldownMins : 15);
+            const [fields, setFields] = useState(ep ? ep.fields : [
+                { id: '1', name: 'Age', type: 'text', options: [] },
+                { id: '2', name: 'Gender', type: 'select', options: ['Male', 'Female', 'Non-binary', 'Prefer not to say'] },
+                { id: '3', name: 'Group Size', type: 'number', options: [] }
+            ]);
+            const [nf, setNf] = useState({ name: '', type: 'text', options: '', dictation: false, dqOpts: {} });
+
+            // Qualification criteria
+            const defaultQC = ep && ep.qualificationCriteria ? ep.qualificationCriteria : { minTime: 0, checklist: [], dqReassignRule: 'ask' };
+            const [qcEnabled, setQcEnabled] = useState(defaultQC.minTime > 0 || defaultQC.checklist.length > 0);
+            const [minTime, setMinTime] = useState(defaultQC.minTime || 0);
+            const [checklist, setChecklist] = useState(defaultQC.checklist || []);
+            const [newCheckItem, setNewCheckItem] = useState('');
+            const [dqReassignRule, setDqReassignRule] = useState(defaultQC.dqReassignRule || 'ask');
+
+            const { notify, NotificationBar } = useNotification();
+
+            const [editingFieldId, setEditingFieldId] = useState(null);
+            const builderRef = useRef(null);
+            const startEditField = (f) => {
+                const dqOpts = {};
+                if (f.type === 'checkbox') f.options.forEach(o => { const w = dqWhenOf(o); if (w) dqOpts[o.label] = w; });
+                setNf({ name: f.name, type: f.type, options: f.type === 'checkbox' ? f.options.map(o => o.label).join(', ') : f.type === 'select' ? f.options.join(', ') : '', dictation: !!f.dictation, dqOpts });
+                setEditingFieldId(f.id);
+                setTimeout(() => { if (builderRef.current) builderRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 50);
+            };
+            const cancelEditField = () => { setEditingFieldId(null); setNf({ name: '', type: 'text', options: '', dictation: false, dqOpts: {} }); };
+            const parsedOpts = nf.options.split(',').map(o => o.trim()).filter(Boolean);
+            const addField = () => {
+                if (!nf.name) { notify('Enter a field name', 'warning'); return; }
+                if (nf.type === 'checkbox' && parsedOpts.length === 0) { notify('Add at least one checkbox option', 'warning'); return; }
+                let options = [];
+                if (nf.type === 'select') options = parsedOpts;
+                if (nf.type === 'checkbox') options = parsedOpts.map(label => ({ label, dq: !!nf.dqOpts[label], dqWhen: nf.dqOpts[label] || null }));
+                if (editingFieldId) setFields(fields.map(f => f.id === editingFieldId ? { ...f, name: nf.name, type: nf.type, options, dictation: nf.dictation } : f));
+                else setFields([...fields, { id: Date.now().toString(), name: nf.name, type: nf.type, options, dictation: nf.dictation }]);
+                setEditingFieldId(null);
+                setNf({ name: '', type: 'text', options: '', dictation: false, dqOpts: {} });
+            };
+            const addCheckItem = () => {
+                if (!newCheckItem.trim()) return;
+                const items = newCheckItem.split(',').map(s => s.trim()).filter(Boolean);
+                const newItems = items.map((label, i) => ({ id: Date.now().toString() + '_' + i, label }));
+                setChecklist([...checklist, ...newItems]);
+                setNewCheckItem('');
+            };
+            const handleSave = () => {
+                if (!name.trim()) { notify('Please enter a project name', 'warning'); return; }
+                const qualificationCriteria = qcEnabled ? { minTime: parseInt(minTime) || 0, checklist, dqReassignRule } : { minTime: 0, checklist: [], dqReassignRule: 'ask' };
+                onSave({ name, enableInterviews, interviewNth, cooldownEnabled, cooldownMins: parseInt(cooldownMins) || 15, fields, qualificationCriteria });
+            };
+
+            return (
+                <>
+                    <div className="nav-breadcrumb"><button onClick={onCancel}>{'\u2190'} Back</button></div>
+                    <div className="content-wrapper">
+                        <h1>{ep ? 'Edit Project' : 'Create New Project'}</h1>
+                        <NotificationBar />
+                        <div className="form-group" style={{ marginTop: '20px' }}>
+                            <label>Project Name</label>
+                            <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g., Climate Change Exhibit Study" />
+                        </div>
+                        <div className="form-group">
+                            <label className="checkbox-label"><input type="checkbox" checked={enableInterviews} onChange={e => setEnableInterviews(e.target.checked)} />Enable systematic observation & interviews</label>
+                        </div>
+                        {enableInterviews && (
+                            <div className="form-group">
+                                <label>Suggested sampling: every Nth visitor (reminder only)</label>
+                                <input type="number" value={interviewNth} onChange={e => setInterviewNth(parseInt(e.target.value) || 1)} min="1" style={{ maxWidth: '120px' }} />
+                                <p style={{ fontSize: '12px', color: 'var(--ink-muted)', marginTop: '6px' }}>This is only a reminder shown during sessions. You decide who to observe and can start the timer on any visitor.</p>
+                                <label className="checkbox-label" style={{ marginTop: '14px' }}><input type="checkbox" checked={cooldownEnabled} onChange={e => setCooldownEnabled(e.target.checked)} />Interview timer: allow a new interview only after enough time has passed since the last interview finished</label>
+                                {cooldownEnabled && (<div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                                    <span style={{ fontSize: '13px', color: 'var(--ink-subtle)' }}>Wait</span>
+                                    <input type="number" value={cooldownMins} onChange={e => setCooldownMins(e.target.value)} min="1" style={{ maxWidth: '90px' }} />
+                                    <span style={{ fontSize: '13px', color: 'var(--ink-subtle)' }}>minutes (a countdown shows on the session screen)</span>
+                                </div>)}
+                            </div>
+                        )}
+
+                        {/* Qualification Criteria */}
+                        <h2>Visitor Qualification Criteria</h2>
+                        <div className="form-group">
+                            <label className="checkbox-label"><input type="checkbox" checked={qcEnabled} onChange={e => setQcEnabled(e.target.checked)} />Enable visitor qualification criteria</label>
+                        </div>
+                        {qcEnabled && (
+                            <div className="criteria-section">
+                                <p style={{ fontSize: '13px', color: 'var(--ink-subtle)', marginBottom: '16px' }}>Observed visitors are checked against these criteria. Qualified visitors proceed to interview; disqualified visitors are logged with a reason.</p>
+                                <div className="form-group">
+                                    <label>Minimum time at exhibit (seconds)</label>
+                                    <p style={{ fontSize: '12px', color: 'var(--ink-muted)', marginBottom: '6px', marginTop: '-4px' }}>Visitors below this duration can be flagged for disqualification. Set to 0 to disable.</p>
+                                    <input type="number" value={minTime} onChange={e => setMinTime(e.target.value)} min="0" style={{ maxWidth: '140px' }} placeholder="e.g., 10" />
+                                </div>
+                                <div className="form-group">
+                                    <label>Qualification checklist (comma-separated to add multiple)</label>
+                                    <p style={{ fontSize: '12px', color: 'var(--ink-muted)', marginBottom: '6px', marginTop: '-4px' }}>Custom criteria to check during observation. Failing any item allows disqualification.</p>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <input type="text" value={newCheckItem} onChange={e => setNewCheckItem(e.target.value)} placeholder="e.g., Is an adult, Engaged with exhibit, Not staff" onKeyDown={e => { if (e.key === 'Enter') addCheckItem(); }} style={{ flex: 1 }} />
+                                        <button className="btn btn-sm btn-success" onClick={addCheckItem}>Add</button>
+                                    </div>
+                                </div>
+                                {checklist.length > 0 && (
+                                    <div style={{ marginTop: '8px' }}>
+                                        {checklist.map(item => (
+                                            <div key={item.id} className="criteria-item">
+                                                <span style={{ fontSize: '13px' }}>{item.label}</span>
+                                                <button className="btn btn-sm" style={{ color: 'var(--danger)' }} onClick={() => setChecklist(checklist.filter(c => c.id !== item.id))}>Remove</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        <h2>Custom Data Fields</h2>
+                        <div className="field-builder" ref={builderRef} style={editingFieldId ? { borderColor: 'var(--accent)', boxShadow: '0 0 0 3px rgba(37,99,235,0.08)' } : {}}>
+                            {editingFieldId && <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--accent)', marginBottom: '10px' }}>Editing field</p>}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', gap: '12px', alignItems: 'end' }}>
+                                <div className="form-group" style={{ marginBottom: 0 }}><label>Field Name</label><input type="text" value={nf.name} onChange={e => setNf({...nf, name: e.target.value})} placeholder="e.g., Used Interactive Feature" onKeyDown={e => { if (e.key === 'Enter') addField(); }} /></div>
+                                <div className="form-group" style={{ marginBottom: 0 }}><label>Type</label><select value={nf.type} onChange={e => setNf({...nf, type: e.target.value})}><option value="text">Text</option><option value="number">Number</option><option value="select">Dropdown</option><option value="checkbox">Checkboxes</option><option value="textarea">Text Area</option></select></div>
+                            </div>
+                            {nf.type === 'select' && <div className="form-group" style={{ marginTop: '12px', marginBottom: 0 }}><label>Options (comma-separated)</label><input type="text" value={nf.options} onChange={e => setNf({...nf, options: e.target.value})} placeholder="e.g., Yes, No, Partially" /></div>}
+                            {nf.type === 'checkbox' && <div className="form-group" style={{ marginTop: '12px', marginBottom: 0 }}>
+                                <label>Checkbox options (comma-separated)</label>
+                                <input type="text" value={nf.options} onChange={e => setNf({...nf, options: e.target.value})} placeholder="e.g., Touched screen, Read label, Left early" />
+                                {parsedOpts.length > 0 && <div style={{ marginTop: '10px' }}>
+                                    <p style={{ fontSize: '12px', color: 'var(--ink-muted)', marginBottom: '6px' }}>For each option, choose whether it disqualifies the visitor (shown in red during tracking):</p>
+                                    {parsedOpts.map(o => <div key={o} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                                        <span style={{ fontSize: '13px', minWidth: '120px', fontWeight: nf.dqOpts[o] ? 600 : 400, color: nf.dqOpts[o] ? 'var(--danger)' : 'var(--ink)' }}>{o}</span>
+                                        <select value={nf.dqOpts[o] || ''} onChange={e => setNf({...nf, dqOpts: { ...nf.dqOpts, [o]: e.target.value }})} style={{ width: 'auto', padding: '5px 8px', fontSize: '13px' }}>
+                                            <option value="">Not disqualifying</option>
+                                            <option value="checked">Disqualify if checked</option>
+                                            <option value="unchecked">Disqualify if NOT checked</option>
+                                        </select>
+                                    </div>)}
+                                </div>}
+                            </div>}
+                            {nf.type === 'textarea' && <div className="form-group" style={{ marginTop: '12px', marginBottom: 0 }}><label className="checkbox-label"><input type="checkbox" checked={nf.dictation} onChange={e => setNf({...nf, dictation: e.target.checked})} />Enable voice dictation</label></div>}
+                            <button className="btn btn-success btn-sm" onClick={addField} style={{ marginTop: '12px' }}>{editingFieldId ? 'Save Field' : '+ Add Field'}</button>{editingFieldId && <button className="btn btn-sm" onClick={cancelEditField} style={{ marginTop: '12px', marginLeft: '8px' }}>Cancel</button>}
+                        </div>
+                        {fields.length > 0 && <div className="field-list"><h3>Fields ({fields.length})</h3>
+                            {fields.map(f => <div key={f.id} className="field-item"><div className="field-info"><strong>{f.name}</strong><span className="field-type">{f.type}{f.type === 'select' && f.options.length > 0 ? ' (' + f.options.join(', ') + ')' : ''}{f.type === 'checkbox' ? ' (' + f.options.map(o => o.label + (dqWhenOf(o) === 'checked' ? ' [DQ if checked]' : dqWhenOf(o) === 'unchecked' ? ' [DQ if not checked]' : '')).join(', ') + ')' : ''}{f.dictation ? ' \u00B7 Dictation' : ''}</span></div><div style={{ display: 'flex', gap: '6px' }}><button className="btn btn-sm" onClick={() => startEditField(f)}>Edit</button><button className="btn btn-sm" style={{ color: 'var(--danger)' }} onClick={() => { if (editingFieldId === f.id) cancelEditField(); setFields(fields.filter(x => x.id !== f.id)); }}>Remove</button></div></div>)}
+                        </div>}
+                        <div className="button-group"><button className="btn btn-primary" onClick={handleSave}>{ep ? 'Save Changes' : 'Create Project'}</button><button className="btn" onClick={onCancel}>Cancel</button></div>
+                    </div>
+                </>
+            );
+        }
+        function ProjectView({ project, onBack, onEdit, onStartSession }) {
+            const [sessions, setSessions] = useState(() => Storage.getSessions(project.id));
+            const [showPreview, setShowPreview] = useState(null);
+            const [expanded, setExpanded] = useState(null);
+            const { confirm, ConfirmBar } = useConfirm();
+            const { notify, NotificationBar } = useNotification();
+            useEffect(() => { setSessions(Storage.getSessions(project.id)); }, [project.id]);
+
+            const startNewSession = () => {
+                // visitor numbering continues from where the previous session ended
+                let prevTotal = 0;
+                Storage.getSessions(project.id).slice().sort((a, b) => new Date(a.startTime) - new Date(b.startTime)).forEach(x => { prevTotal = (x.startNumber != null ? x.startNumber : prevTotal) + (x.counted || 0) + x.visitors.length; });
+                const s = { startNumber: prevTotal, id: Date.now().toString(), projectId: project.id, startTime: new Date().toISOString(), status: 'active', visitors: [], pausedDuration: 0, pauseStartTime: null, pendingInterview: false, counted: 0, sinceSelected: 0, lastInterviewEnd: null, interviewActive: false };
+                Storage.upsertSession(project.id, s);
+                onStartSession(s);
+            };
+            const exportSession = (session) => {
+                const qc = project.qualificationCriteria || {};
+                const data = session.visitors.map((v, i) => {
+                    const row = { 'Visitor #': v.visitorNumber || i + 1, 'Observed': v.isObserved ? 'Yes' : 'No', 'Interviewed': v.isInterview ? 'Yes' : 'No', 'Disqualified': v.disqualified ? 'Yes' : 'No', 'DQ Reason': v.dqReason || '', 'Interview finished': v.interviewEnd ? new Date(v.interviewEnd).toLocaleTimeString() : '' };
+                    if (qc.checklist && qc.checklist.length > 0) { qc.checklist.forEach(c => { row['Check: ' + c.label] = v.checklistResults && v.checklistResults[c.id] ? 'Pass' : 'Fail'; }); }
+                    row['Start Time'] = v.startTime ? new Date(v.startTime).toLocaleTimeString() : '';
+                    row['End Time'] = v.endTime ? new Date(v.endTime).toLocaleTimeString() : '';
+                    row['Duration (seconds)'] = v.duration;
+                    row['Duration (mm:ss)'] = formatTime(v.duration);
+                    project.fields.forEach(f => { row[f.name] = fmtVal(v.data[f.id]); });
+                    return row;
+                });
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), "Visitors");
+                XLSX.writeFile(wb, project.name + '_' + new Date(session.startTime).toISOString().split('T')[0] + '.xlsx');
+                notify('Exported successfully', 'success');
+            };
+            const exportAll = () => {
+                if (sessions.length === 0) { notify('No sessions to export', 'warning'); return; }
+                const wb = XLSX.utils.book_new();
+                const qc = project.qualificationCriteria || {};
+                sessions.forEach((session, si) => {
+                    const data = session.visitors.map((v, i) => {
+                        const row = { 'Visitor #': v.visitorNumber || i + 1, 'Observed': v.isObserved ? 'Yes' : 'No', 'Interviewed': v.isInterview ? 'Yes' : 'No', 'Disqualified': v.disqualified ? 'Yes' : 'No', 'DQ Reason': v.dqReason || '', 'Interview finished': v.interviewEnd ? new Date(v.interviewEnd).toLocaleTimeString() : '' };
+                        if (qc.checklist && qc.checklist.length > 0) { qc.checklist.forEach(c => { row['Check: ' + c.label] = v.checklistResults && v.checklistResults[c.id] ? 'Pass' : 'Fail'; }); }
+                        row['Start Time'] = v.startTime ? new Date(v.startTime).toLocaleTimeString() : '';
+                        row['End Time'] = v.endTime ? new Date(v.endTime).toLocaleTimeString() : '';
+                        row['Duration (seconds)'] = v.duration;
+                        row['Duration (mm:ss)'] = formatTime(v.duration);
+                        project.fields.forEach(f => { row[f.name] = fmtVal(v.data[f.id]); });
+                        return row;
+                    });
+                    const sn = ('S' + (si+1) + ' ' + new Date(session.startTime).toLocaleDateString().replace(/\//g, '-')).slice(0, 31);
+                    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), sn);
+                });
+                XLSX.writeFile(wb, project.name + '_all_sessions.xlsx');
+                notify('Exported all sessions', 'success');
+            };
+            const deleteSession = (sid) => { confirm('Delete this session and all its data?', () => { setSessions(Storage.deleteSession(project.id, sid)); notify('Session deleted', 'info'); }); };
+
+            const completed = sessions.filter(s => s.status === 'completed');
+            const active = sessions.filter(s => s.status !== 'completed');
+            const totalV = sessions.reduce((sum, s) => sum + (s.counted || 0) + s.visitors.length, 0);
+            const totalI = sessions.reduce((sum, s) => sum + s.visitors.filter(v => v.isInterview).length, 0);
+            const totalDQ = sessions.reduce((sum, s) => sum + s.visitors.filter(v => v.disqualified).length, 0);
+            const qualifiedVisitors = sessions.flatMap(s => s.visitors.filter(v => !v.disqualified));
+            const allD = qualifiedVisitors.map(v => v.duration);
+            const avgD = allD.length > 0 ? Math.round(allD.reduce((a, b) => a + b, 0) / allD.length) : 0;
+
+            return (
+                <>
+                    <div className="nav-breadcrumb"><button onClick={onBack}>{'\u2190'} All Projects</button><span style={{ color: 'var(--ink-muted)', margin: '0 8px' }}>/</span><span style={{ color: 'var(--ink-subtle)', fontWeight: 500 }}>{project.name}</span></div>
+                    <div className="content-wrapper">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+                            <div><h1>{project.name}</h1><p className="subtitle" style={{ marginBottom: '16px' }}>{project.enableInterviews ? 'Observe every ' + project.interviewNth + ordinalSuffix(project.interviewNth) + ' visitor for interview' : 'Timing only'}</p></div>
+                            <button className="btn btn-sm" onClick={onEdit}>Edit Project</button>
+                        </div>
+                        {sessions.length > 0 && (
+                            <div className="stat-grid">
+                                <div className="stat-card"><div className="stat-value">{sessions.length}</div><div className="stat-label">Sessions</div></div>
+                                <div className="stat-card"><div className="stat-value">{totalV}</div><div className="stat-label">Total Visitors</div></div>
+                                <div className="stat-card"><div className="stat-value">{totalI}</div><div className="stat-label">Interviewed</div></div>
+                                <div className="stat-card"><div className="stat-value">{formatTime(avgD)}</div><div className="stat-label">Avg Duration</div></div>
+                                {totalDQ > 0 && <div className="stat-card"><div className="stat-value" style={{ color: 'var(--danger)' }}>{totalDQ}</div><div className="stat-label">Disqualified</div></div>}
+                            </div>
+                        )}
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                            <button className="btn btn-success" onClick={startNewSession}>+ Start New Session</button>
+                            {sessions.length > 0 && <button className="btn" onClick={exportAll}>Export All</button>}
+                        </div>
+                        <ConfirmBar /><NotificationBar />
+                        {active.length > 0 && (<><h2 style={{ marginTop: '24px' }}>Active Sessions</h2>{active.map(s => <SessionCard key={s.id} session={s} project={project} onResume={() => onStartSession(s)} onExport={() => exportSession(s)} onDelete={() => deleteSession(s.id)} onPreview={() => setShowPreview(s)} expanded={expanded === s.id} onToggleExpand={() => setExpanded(expanded === s.id ? null : s.id)} />)}</>)}
+                        <h2>Past Sessions {completed.length > 0 && ('(' + completed.length + ')')}</h2>
+                        {completed.length === 0 ? (<div className="empty-state" style={{ padding: '24px' }}>No completed sessions yet.</div>) : ([...completed].sort((a, b) => new Date(b.startTime) - new Date(a.startTime)).map(s => <SessionCard key={s.id} session={s} project={project} onExport={() => exportSession(s)} onDelete={() => deleteSession(s.id)} onPreview={() => setShowPreview(s)} expanded={expanded === s.id} onToggleExpand={() => setExpanded(expanded === s.id ? null : s.id)} />))}
+                        {showPreview && <PreviewModal session={showPreview} project={project} onClose={() => setShowPreview(null)} />}
+                    </div>
+                </>
+            );
+        }
+
+        function SessionCard({ session, project, onResume, onExport, onDelete, onPreview, expanded, onToggleExpand }) {
+            const intv = session.visitors.filter(v => v.isInterview).length;
+            const dqd = session.visitors.filter(v => v.disqualified).length;
+            const qualified = session.visitors.filter(v => !v.disqualified);
+            const durs = qualified.map(v => v.duration);
+            const avg = durs.length > 0 ? Math.round(durs.reduce((a, b) => a + b, 0) / durs.length) : 0;
+            return (
+                <div className="session-card">
+                    <div><span style={{ fontWeight: 600, fontSize: '14px' }}>{new Date(session.startTime).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span><span style={{ marginLeft: '10px' }}><span className={'status-badge ' + session.status}>{session.status}</span></span></div>
+                    <div className="session-card-meta">
+                        <span>Started {new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span>{session.visitors.length} visitor{session.visitors.length !== 1 ? 's' : ''}</span>
+                        {project.enableInterviews && <span>{intv} interview{intv !== 1 ? 's' : ''}</span>}
+                        {dqd > 0 && <span style={{ color: 'var(--danger)' }}>{dqd} DQ'd</span>}
+                        {durs.length > 0 && <span>Avg {formatTime(avg)}</span>}
+                    </div>
+                    <div className="session-card-actions">
+                        {session.status !== 'completed' && onResume && <button className="btn btn-primary btn-sm" onClick={onResume}>{session.status === 'paused' ? 'Resume' : 'Continue'}</button>}
+                        {session.visitors.length > 0 && <button className="session-expand-toggle" onClick={onToggleExpand}>{expanded ? '\u25BE Hide data' : '\u25B8 View data'}</button>}
+                        <button className="btn btn-sm" onClick={onPreview}>Full Preview</button>
+                        {session.visitors.length > 0 && <button className="btn btn-sm" onClick={onExport}>Export</button>}
+                        <button className="btn btn-sm" style={{ color: 'var(--danger)' }} onClick={onDelete}>Delete</button>
+                    </div>
+                    {expanded && session.visitors.length > 0 && (
+                        <div className="session-data-inline"><div style={{ overflowX: 'auto' }}>
+                            <table><thead><tr><th>#</th>{project.enableInterviews && <th>Obs/Int</th>}<th>Status</th><th>Start</th><th>End</th><th>Duration</th>{project.fields.map(f => <th key={f.id}>{f.name}</th>)}</tr></thead>
+                            <tbody>{session.visitors.map((v, i) => (
+                                <tr key={i} className={v.disqualified ? 'disqualified' : ''}><td>{v.visitorNumber || i+1}</td>{project.enableInterviews && <td>{v.isInterview ? '\u2713' : v.isObserved ? 'Obs' : ''}</td>}
+                                <td>{v.disqualified ? <span className="dq-badge">DQ</span> : <span style={{ color: 'var(--success)', fontSize: '11px', fontWeight: 600 }}>OK</span>}</td>
+                                <td>{v.startTime ? new Date(v.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                                <td>{v.endTime ? new Date(v.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                                <td style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '12px' }}>{formatTime(v.duration)}</td>
+                                {project.fields.map(f => <td key={f.id}>{fmtVal(v.data[f.id]) || '-'}</td>)}</tr>
+                            ))}</tbody></table>
+                        </div></div>
+                    )}
+                </div>
+            );
+        }
+
+        function PreviewModal({ session, project, onClose }) {
+            return (
+                <div className="modal-overlay" onClick={onClose}><div className="modal" onClick={e => e.stopPropagation()}>
+                    <h2>Session Preview</h2>
+                    <p style={{ color: 'var(--ink-subtle)', marginBottom: '16px', fontSize: '13px' }}>{new Date(session.startTime).toLocaleString()} {'\u00B7'} {session.visitors.length} visitor{session.visitors.length !== 1 ? 's' : ''}</p>
+                    <div className="export-preview">
+                        <table><thead><tr><th>#</th>{project.enableInterviews && <th>Obs/Int</th>}<th>Status</th><th>Start</th><th>End</th><th>Duration</th>{project.fields.map(f => <th key={f.id}>{f.name}</th>)}</tr></thead>
+                        <tbody>{session.visitors.map((v, i) => (
+                            <tr key={i} className={v.disqualified ? 'disqualified' : ''}><td>{v.visitorNumber || i+1}</td>{project.enableInterviews && <td>{v.isInterview ? '\u2713' : v.isObserved ? 'Obs' : ''}</td>}
+                            <td>{v.disqualified ? <span className="dq-badge">DQ</span> : 'OK'}</td>
+                            <td>{v.startTime ? new Date(v.startTime).toLocaleTimeString() : '-'}</td>
+                            <td>{v.endTime ? new Date(v.endTime).toLocaleTimeString() : '-'}</td>
+                            <td>{formatTime(v.duration)}</td>
+                            {project.fields.map(f => <td key={f.id}>{fmtVal(v.data[f.id]) || '-'}</td>)}</tr>
+                        ))}</tbody></table>
+                    </div>
+                    <div className="button-group"><button className="btn btn-primary" onClick={onClose}>Close</button></div>
+                </div></div>
+            );
+        }
+        function SessionView({ project, session, onBack }) {
+            const [ls, setLs] = useState(session);
+            const [timerRunning, setTimerRunning] = useState(false);
+            const [currentTimer, setCurrentTimer] = useState(0);
+            const [timerStartTime, setTimerStartTime] = useState(null);
+            const [now, setNow] = useState(Date.now());
+            const [interviewThis, setInterviewThis] = useState(false);
+            const [visitorData, setVisitorData] = useState({});
+            const [showForm, setShowForm] = useState(false);
+            const [editingVisitor, setEditingVisitor] = useState(null);
+            const [ending, setEnding] = useState(false);
+            const [dqMode, setDqMode] = useState(false);
+            const [dqReason, setDqReason] = useState('');
+            const [checklistState, setChecklistState] = useState({});
+            const [reassignChoice, setReassignChoice] = useState(null); // null, 'next', 'skip'
+            const [showReassign, setShowReassign] = useState(false);
+            const [retroDQ, setRetroDQ] = useState(null); // { index, reason } for retroactive DQ
+            const timerRef = useRef(null);
+            const endRef = useRef(null);
+            const { notify, NotificationBar } = useNotification();
+
+            const qc = project.qualificationCriteria || { minTime: 0, checklist: [], dqReassignRule: 'ask' };
+            const hasQC = qc.minTime > 0 || (qc.checklist && qc.checklist.length > 0);
+
+            // Interview timer: a new interview is allowed once the wait has passed since the last one finished
+            const N = project.interviewNth || 1;
+            const encountered = (ls.startNumber || 0) + (ls.counted || 0) + ls.visitors.length;
+            const cooldownOn = !!(project.enableInterviews && project.cooldownEnabled);
+            const cooldownMs = (project.cooldownMins || 15) * 60000;
+            const cooldownRemaining = (cooldownOn && ls.lastInterviewEnd && !ls.interviewActive) ? Math.max(0, Math.ceil((new Date(ls.lastInterviewEnd).getTime() + cooldownMs - now) / 1000)) : null;
+            const timeTriggered = cooldownRemaining === 0;
+            const interviewEligible = !!project.enableInterviews && (!cooldownOn || (!ls.interviewActive && (cooldownRemaining === null || cooldownRemaining === 0)));
+
+            useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
+            const prevTime = useRef(false);
+            useEffect(() => {
+                if (timeTriggered && !prevTime.current) { notify(project.cooldownMins + ' minutes since the last interview: you can interview the next qualified visitor', 'info', 8000); try { if (navigator.vibrate) navigator.vibrate(300); } catch (e) {} }
+                prevTime.current = timeTriggered;
+            }, [timeTriggered]);
+
+            // Checkbox options flagged as disqualifying
+            const dqFlags = [];
+            project.fields.forEach(f => { if (f.type === 'checkbox') { const sel = visitorData[f.id] || []; (f.options || []).forEach(o => {
+                const w = dqWhenOf(o);
+                if (w === 'checked' && sel.includes(o.label)) dqFlags.push(f.name + ': ' + o.label);
+                // "must be checked" criteria are only judged once the timer is stopped
+                if (w === 'unchecked' && !timerRunning && !sel.includes(o.label)) dqFlags.push(f.name + ': not ' + o.label);
+            }); } });
+
+            useEffect(() => {
+                if (timerRunning) { timerRef.current = setInterval(() => setCurrentTimer(t => t + 1), 1000); }
+                else if (timerRef.current) { clearInterval(timerRef.current); }
+                return () => { if (timerRef.current) clearInterval(timerRef.current); };
+            }, [timerRunning]);
+
+            useEffect(() => { Storage.upsertSession(project.id, ls); }, [ls, project.id]);
+            useEffect(() => { if (ending && endRef.current) endRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, [ending]);
+
+            // Initialize checklist state when form opens
+            useEffect(() => {
+                if (showForm && qc.checklist && qc.checklist.length > 0) {
+                    const initial = {};
+                    qc.checklist.forEach(c => { initial[c.id] = true; }); // default all pass
+                    setChecklistState(initial);
+                }
+            }, [showForm]);
+
+            const startTimer = () => {
+                setTimerStartTime(new Date().toISOString());
+                setTimerRunning(true); setCurrentTimer(0); setVisitorData({}); setShowForm(true); setInterviewThis(interviewEligible);
+                setDqMode(false); setDqReason(''); setShowReassign(false); setReassignChoice(null);
+            };
+            const stopTimer = () => setTimerRunning(false);
+            const resumeTimer = () => setTimerRunning(true); // keeps the current time and entered data
+
+            const saveVisitor = (disqualified, reason) => {
+                if (timerRunning) stopTimer();
+                const wasObserved = !!project.enableInterviews; // every tracked visitor is observed
+                const nowIso = new Date().toISOString();
+                const v = {
+                    visitorNumber: encountered + 1, interviewPlanned: interviewThis,
+                    duration: currentTimer, startTime: timerStartTime, endTime: nowIso,
+                    isObserved: wasObserved, // was this the Nth visitor selected for observation?
+                    isInterview: wasObserved && interviewThis && !disqualified, // qualified AND chosen for interview
+                    data: visitorData, timestamp: new Date().toISOString(),
+                    disqualified: !!disqualified, dqReason: reason || '',
+                    checklistResults: { ...checklistState }
+                };
+
+                const newPending = false;
+
+                const updated = { ...ls, visitors: [...ls.visitors, v], pendingInterview: false, lastInterviewEnd: ls.lastInterviewEnd || null, interviewActive: v.isInterview ? true : !!ls.interviewActive };
+                setLs(updated);
+                setShowForm(false); setCurrentTimer(0); setTimerStartTime(null); setVisitorData({});
+                setDqMode(false); setDqReason(''); setShowReassign(false); setReassignChoice(null);
+                setChecklistState({});
+
+                if (disqualified) {
+                    notify('Visitor #' + (encountered + 1) + ' disqualified' + (reason ? ': ' + reason : ''), 'warning');
+                } else {
+                    notify('Visitor #' + (encountered + 1) + ' saved (' + formatTime(currentTimer) + ')' + (v.isInterview ? '. Mark the interview finished when done.' : ''), 'success');
+                }
+            };
+
+            const lastOpenInterview = () => { for (let i = ls.visitors.length - 1; i >= 0; i--) { if (ls.visitors[i].isInterview && !ls.visitors[i].interviewEnd) return i; } return -1; };
+            const finishInterview = () => {
+                const i = lastOpenInterview(); const iso = new Date().toISOString();
+                const visitors = ls.visitors.map((v, k) => k === i ? { ...v, interviewEnd: iso } : v);
+                setLs({ ...ls, visitors, interviewActive: false, lastInterviewEnd: iso });
+                notify('Interview finished' + (cooldownOn ? '. ' + project.cooldownMins + ' minute countdown started' : ''), 'success');
+            };
+            const declineInterview = () => {
+                const i = lastOpenInterview();
+                const visitors = ls.visitors.map((v, k) => k === i ? { ...v, isInterview: false, interviewDeclined: true } : v);
+                setLs({ ...ls, visitors, interviewActive: false });
+                notify('Interview marked as not done', 'info');
+            };
+
+            const handleDisqualify = () => { saveVisitor(true, dqReason); };
+
+            const handleReassignAndDQ = () => {
+                saveVisitor(true, dqReason);
+            };
+
+            const cancelVisitor = () => {
+                if (timerRunning) stopTimer();
+                setShowForm(false); setCurrentTimer(0); setTimerStartTime(null); setVisitorData({});
+                setDqMode(false); setDqReason(''); setShowReassign(false); setReassignChoice(null);
+                setChecklistState({});
+            };
+
+            const pauseSession = () => setLs({ ...ls, status: 'paused', pauseStartTime: new Date().toISOString() });
+            const resumeSession = () => {
+                const dur = ls.pauseStartTime ? (new Date() - new Date(ls.pauseStartTime)) / 1000 : 0;
+                setLs({ ...ls, status: 'active', pausedDuration: ls.pausedDuration + dur, pauseStartTime: null });
+            };
+            const endSession = () => { if (timerRunning) { notify('Stop the current timer before ending the session', 'warning'); return; } setEnding(true); };
+            const confirmEnd = () => { const c = { ...ls, status: 'completed', endTime: new Date().toISOString() }; Storage.upsertSession(project.id, c); setLs(c); setEnding(false); onBack(); };
+
+            const updateVisitor = (index, field, value) => {
+                const visitors = ls.visitors.map((v, i) => i === index ? { ...v, data: { ...v.data, [field]: value } } : v);
+                setLs({ ...ls, visitors });
+            };
+
+            // Retroactive DQ: mark a previously-saved visitor as disqualified
+            const retroDisqualify = (index, reason) => {
+                const visitors = ls.visitors.map((v, i) => i === index ? { ...v, disqualified: true, dqReason: reason || '', isInterview: false } : v);
+                setLs({ ...ls, visitors });
+                setRetroDQ(null);
+                notify('Visitor #' + (index + 1) + ' disqualified', 'warning');
+            };
+
+            // Undo DQ: restore a disqualified visitor (re-mark as interviewed if they were observed)
+            const undoDisqualify = (index) => {
+                const visitors = ls.visitors.map((vi, i) => i === index ? { ...vi, disqualified: false, dqReason: '', isInterview: !!vi.interviewPlanned } : vi);
+                setLs({ ...ls, visitors });
+                notify('Visitor #' + (index + 1) + ' restored', 'success');
+            };
+
+            // Check if min time is failing
+            const fmtCd = (sec) => Math.floor(sec / 60).toString().padStart(2, '0') + ':' + (sec % 60).toString().padStart(2, '0');
+            const statusPanel = (project.enableInterviews && (ls.interviewActive || cooldownOn)) ? (
+                ls.interviewActive ? (
+                    <div style={{ background: 'var(--warning-light)', border: '1px solid var(--warning-border)', borderRadius: 'var(--radius)', padding: '10px 14px', marginBottom: '12px', maxWidth: '520px', marginLeft: 'auto', marginRight: 'auto', textAlign: 'center' }}>
+                        <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--warning)', marginBottom: '10px' }}>Interview in progress</p>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                            <button className="btn btn-success btn-sm" onClick={finishInterview}>Interview finished</button>
+                            <button className="btn btn-sm" onClick={declineInterview}>Interview did not happen</button>
+                        </div>
+                    </div>
+                ) : (
+                    <div style={{ background: timeTriggered ? 'var(--success-light)' : 'var(--surface)', border: '1px solid ' + (timeTriggered ? 'var(--success-border)' : 'var(--border)'), borderRadius: 'var(--radius)', padding: '8px 14px', marginBottom: '12px', maxWidth: '520px', marginLeft: 'auto', marginRight: 'auto', textAlign: 'center' }}>
+                        {!ls.lastInterviewEnd && <p style={{ fontSize: '13px', color: 'var(--ink-muted)' }}>{project.cooldownMins}-minute interview timer starts when you mark an interview finished.</p>}
+                        {ls.lastInterviewEnd && !timeTriggered && <p style={{ fontSize: '13px', color: 'var(--ink-subtle)' }}>Interview available in <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '16px', fontWeight: 600, color: 'var(--ink)' }}>{fmtCd(cooldownRemaining)}</span></p>}
+                        {timeTriggered && <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--success)' }}>{project.cooldownMins} minutes have passed. You can interview the next qualified visitor.</p>}
+                    </div>
+                )
+            ) : null;
+            const minTimeFailing = hasQC && qc.minTime > 0 && currentTimer > 0 && currentTimer < qc.minTime && !timerRunning;
+
+            return (
+                <>
+                    <div className="nav-breadcrumb"><button onClick={onBack}>{'\u2190'} Back to {project.name}</button></div>
+                    <div className="content-wrapper">
+                        <h1>Session</h1>
+                        <div className="session-info">
+                            <p><strong>Project:</strong> {project.name}</p>
+                            <p><strong>Started:</strong> {new Date(ls.startTime).toLocaleString()}</p>
+                            {project.enableInterviews && <p><strong>Suggested sampling:</strong> every {N}{ordinalSuffix(N)} visitor (your call)</p>}
+                            <p><strong>Visitors:</strong> {ls.visitors.length}{ls.visitors.filter(v => v.disqualified).length > 0 && (' (' + ls.visitors.filter(v => v.disqualified).length + ' DQ\'d)')}</p>
+                        </div>
+                        <NotificationBar />
+
+                        {ls.status === 'paused' ? (
+                            <div style={{ textAlign: 'center', margin: '40px 0' }}>
+                                <p style={{ color: 'var(--warning)', fontWeight: 600, fontSize: '16px', marginBottom: '16px' }}>Session Paused</p>
+                                <button className="btn btn-success" onClick={resumeSession}>Resume Session</button>
+                            </div>
+                        ) : !showForm ? (
+                            <>
+                                <div className="visitor-count">
+                                    <strong>Next Visitor: #{encountered + 1}</strong>
+                                    {project.enableInterviews && (interviewEligible ? <div className="interview-badge">{'\uD83C\uDFA4'} Interview window open: interview if they qualify</div> : <div style={{ fontSize: '12px', color: 'var(--ink-muted)', marginTop: '4px' }}>Interview timer still running{cooldownRemaining ? ' (' + fmtCd(cooldownRemaining) + ')' : ' (interview in progress)'}</div>)}
+                                </div>
+                                {statusPanel}
+                                {/* Show qualification criteria as reference before starting */}
+                                {hasQC && (
+                                    <div style={{ background: 'var(--purple-light)', border: '1px solid var(--purple-border)', borderRadius: 'var(--radius)', padding: '14px 18px', marginBottom: '20px', maxWidth: '480px', marginLeft: 'auto', marginRight: 'auto' }}>
+                                        <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--purple)', marginBottom: '6px' }}>Qualification Criteria</p>
+                                        {qc.minTime > 0 && <p style={{ fontSize: '13px', color: 'var(--ink-subtle)', marginBottom: '4px' }}>Min. time at exhibit: <strong>{qc.minTime}s</strong></p>}
+                                        {qc.checklist && qc.checklist.length > 0 && (
+                                            <div style={{ marginTop: '6px' }}>
+                                                {qc.checklist.map(item => (
+                                                    <p key={item.id} style={{ fontSize: '13px', color: 'var(--ink-subtle)', marginBottom: '2px' }}>{'\u2022'} {item.label}</p>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div className="timer-display">{formatTime(currentTimer)}</div>
+                                <div className="timer-controls"><button className="btn btn-success" onClick={startTimer}>Start Timer</button></div>
+                                <div style={{ textAlign: 'center', marginTop: '32px', display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                    <button className="btn btn-warning btn-sm" onClick={pauseSession}>Pause Session</button>
+                                    <button className="btn btn-sm" onClick={endSession}>End Session</button>
+                                </div>
+                                {ending && (<div ref={endRef} className="inline-confirm" style={{ marginTop: '12px' }}><p>End this session? You can still view and export data later.</p><div className="confirm-actions"><button className="btn btn-danger btn-sm" onClick={confirmEnd}>End Session</button><button className="btn btn-sm" onClick={() => setEnding(false)}>Keep Going</button></div></div>)}
+                            </>
+                        ) : (
+                            <>
+                                <div className="sticky-timer">
+                                    <div className="sticky-row">
+                                        <div className="sticky-info">
+                                            <strong>Visitor #{encountered + 1}</strong>
+                                            {project.enableInterviews && !interviewEligible && <span className="chip chip-off">{'\u23F3'} {cooldownRemaining ? fmtCd(cooldownRemaining) : 'interview in progress'}</span>}
+                                        </div>
+                                        <div className="timer-display">{formatTime(currentTimer)}</div>
+                                        <div className="timer-controls">
+                                            <button className={timerRunning ? "btn btn-lg btn-danger" : "btn btn-lg btn-success"} onClick={timerRunning ? stopTimer : resumeTimer}>{timerRunning ? 'Stop' : 'Resume'}</button>
+                                            <button className="btn btn-sm btn-ondark" style={dqMode ? { background: 'var(--danger-light)', color: 'var(--danger)', borderColor: 'var(--danger-border)' } : {}} onClick={() => setDqMode(!dqMode)}>{dqMode ? 'Cancel DQ' : 'Disqualify'}</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Qualification checklist (always visible during tracking) */}
+                                {hasQC && (qc.checklist.length > 0 || qc.minTime > 0) && (
+                                    <div style={{ background: 'var(--purple-light)', border: '1px solid var(--purple-border)', borderRadius: 'var(--radius)', padding: '14px 18px', marginBottom: '16px' }}>
+                                        <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--purple)', marginBottom: '8px' }}>Qualification Checklist</p>
+                                        {qc.checklist.map(item => (
+                                            <label key={item.id} className="checkbox-label" style={{ marginBottom: '4px' }}>
+                                                <input type="checkbox" checked={checklistState[item.id] !== false} onChange={e => setChecklistState({ ...checklistState, [item.id]: e.target.checked })} />
+                                                <span style={checklistState[item.id] === false ? { color: 'var(--danger)', fontWeight: 500 } : {}}>{item.label}</span>
+                                            </label>
+                                        ))}
+                                        {qc.minTime > 0 && <p style={{ fontSize: '12px', color: currentTimer >= qc.minTime ? 'var(--success)' : 'var(--ink-muted)', marginTop: '8px', fontWeight: currentTimer >= qc.minTime ? 500 : 400 }}>Min. time: {qc.minTime}s {currentTimer >= qc.minTime ? '✓ Met' : '(' + Math.max(0, qc.minTime - currentTimer) + 's remaining)'}</p>}
+                                    </div>
+                                )}
+
+                                {/* Disqualification panel */}
+                                {dqMode && (
+                                    <div className="dq-panel">
+                                        <p>Disqualify Visitor #{encountered + 1}</p>
+                                        {dqFlags.length > 0 && <p style={{ fontSize: '12px', marginBottom: '6px' }}>Disqualifying criteria met: {dqFlags.join(', ')}</p>}
+                                        {/* Auto-detected reasons */}
+                                        {minTimeFailing && <p style={{ fontSize: '12px', marginBottom: '6px' }}>Below minimum time ({currentTimer}s / {qc.minTime}s required)</p>}
+                                        {qc.checklist && qc.checklist.filter(c => checklistState[c.id] === false).length > 0 && (
+                                            <p style={{ fontSize: '12px', marginBottom: '6px' }}>Failed: {qc.checklist.filter(c => checklistState[c.id] === false).map(c => c.label).join(', ')}</p>
+                                        )}
+                                        <div className="form-group" style={{ marginBottom: '12px' }}>
+                                            <label style={{ color: 'var(--danger)' }}>Reason for disqualification</label>
+                                            <input type="text" value={dqReason} onChange={e => setDqReason(e.target.value)} placeholder="e.g., Walked through without stopping, Staff member, Under 18" style={{ borderColor: 'var(--danger-border)' }} />
+                                        </div>
+
+                                        {/* Interview reassignment if this was an interview visitor */}
+                                        {showReassign && (
+                                            <div className="interview-reassign">
+                                                <p>This observed visitor was due for interview but is being disqualified. What should happen?</p>
+                                                <div className="radio-group">
+                                                    <label className="radio-label"><input type="radio" name="reassign" value="next" checked={reassignChoice === 'next'} onChange={() => setReassignChoice('next')} />Observe the next visitor for interview instead</label>
+                                                    <label className="radio-label"><input type="radio" name="reassign" value="skip" checked={reassignChoice === 'skip'} onChange={() => setReassignChoice('skip')} />Skip this observation slot</label>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="button-group" style={{ marginTop: '12px' }}>
+                                            {!showReassign ? (
+                                                <button className="btn btn-danger btn-sm" onClick={handleDisqualify}>Confirm Disqualification</button>
+                                            ) : (
+                                                <button className="btn btn-danger btn-sm" disabled={!reassignChoice} onClick={handleReassignAndDQ}>Disqualify & {reassignChoice === 'next' ? 'Observe Next' : 'Skip Slot'}</button>
+                                            )}
+                                            <button className="btn btn-sm" onClick={() => { setDqMode(false); setDqReason(''); setShowReassign(false); setReassignChoice(null); }}>Cancel</button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {!dqMode && dqFlags.length > 0 && (
+                                    <div className="dq-panel">
+                                        <p>Disqualifying criteria met: {dqFlags.join(', ')}</p>
+                                        <button className="btn btn-danger btn-sm" onClick={() => { setDqMode(true); if (!dqReason) setDqReason(dqFlags.join('; ')); }}>Disqualify visitor</button>
+                                    </div>
+                                )}
+                                {!dqMode && project.enableInterviews && (
+                                    <label className="checkbox-label" style={{ margin: '4px 0 16px' }}><input type="checkbox" checked={interviewThis} onChange={e => setInterviewThis(e.target.checked)} />Interview this visitor if they qualify{!interviewEligible && <span style={{ fontSize: '12px', color: 'var(--ink-muted)', marginLeft: '6px' }}>(timer not up yet)</span>}</label>
+                                )}
+                                {!dqMode && <VisitorForm timerRunning={timerRunning} project={project} visitorData={visitorData} setVisitorData={setVisitorData} onSave={() => saveVisitor(false, '')} onCancel={cancelVisitor} />}
+                            </>
+                        )}
+
+                        {ls.visitors.length > 0 && (
+                            <>
+                                <h2>Session Data ({ls.visitors.length} visitor{ls.visitors.length !== 1 ? 's' : ''}{ls.visitors.filter(v => v.disqualified).length > 0 && (', ' + ls.visitors.filter(v => v.disqualified).length + ' DQ\'d')})</h2>
+                                <div style={{ overflowX: 'auto' }}>
+                                    <table><thead><tr><th>#</th>{project.enableInterviews && <th>Obs/Int</th>}<th>Status</th><th>Start</th><th>End</th><th>Duration</th>{project.fields.map(f => <th key={f.id}>{f.name}</th>)}<th style={{ width: '80px' }}></th></tr></thead>
+                                    <tbody>{ls.visitors.map((v, idx) => (
+                                        <React.Fragment key={idx}>
+                                        <tr className={v.disqualified ? 'disqualified' : ''}>
+                                            <td>{v.visitorNumber || idx+1}</td>
+                                            {project.enableInterviews && <td>{v.isInterview ? '✓' : v.isObserved ? 'Obs' : ''}</td>}
+                                            <td>{v.disqualified ? <><span className="dq-badge">DQ</span>{v.dqReason && <span style={{ fontSize: '11px', color: 'var(--ink-muted)', marginLeft: '6px' }} title={v.dqReason}>{v.dqReason.length > 20 ? v.dqReason.slice(0,20) + '...' : v.dqReason}</span>}</> : <span style={{ color: 'var(--success)', fontSize: '11px', fontWeight: 600 }}>OK</span>}</td>
+                                            <td>{v.startTime ? new Date(v.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                                            <td>{v.endTime ? new Date(v.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                                            <td style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '12px' }}>{formatTime(v.duration)}</td>
+                                            {project.fields.map(field => (
+                                                <td key={field.id} className="edit-cell" onClick={() => setEditingVisitor({ index: idx, fieldId: field.id })}>
+                                                    {editingVisitor && editingVisitor.index === idx && editingVisitor.fieldId === field.id ? (
+                                                        field.type === 'checkbox' ? (
+                                                            <div onClick={e => e.stopPropagation()}>
+                                                                {field.options.map(o => { const sel = v.data[field.id] || []; const on = sel.includes(o.label); return <label key={o.label} className="checkbox-label" style={{ marginBottom: '2px' }}><input type="checkbox" checked={on} onChange={() => updateVisitor(idx, field.id, on ? sel.filter(x => x !== o.label) : [...sel, o.label])} /><span style={dqWhenOf(o) ? { color: 'var(--danger)' } : {}}>{o.label}{dqWhenOf(o) === 'checked' ? ' (DQ if checked)' : dqWhenOf(o) === 'unchecked' ? ' (DQ if not checked)' : ''}</span></label>; })}
+                                                                <button className="btn btn-sm" style={{ marginTop: '4px' }} onClick={() => setEditingVisitor(null)}>Done</button>
+                                                            </div>
+                                                        ) : field.type === 'select' ? (
+                                                            <select className="edit-input" value={v.data[field.id] || ''} onChange={e => { updateVisitor(idx, field.id, e.target.value); setEditingVisitor(null); }} onBlur={() => setEditingVisitor(null)} autoFocus><option value="">Select...</option>{field.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}</select>
+                                                        ) : (<input className="edit-input" type={field.type === 'number' ? 'number' : 'text'} value={v.data[field.id] || ''} onChange={e => updateVisitor(idx, field.id, e.target.value)} onBlur={() => setEditingVisitor(null)} onKeyDown={e => { if (e.key === 'Enter') setEditingVisitor(null); }} autoFocus />)
+                                                    ) : (fmtVal(v.data[field.id]) || <span style={{ color: 'var(--ink-muted)' }}>-</span>)}
+                                                </td>
+                                            ))}
+                                            <td>
+                                                {v.disqualified ? (
+                                                    <button className="btn btn-sm" style={{ fontSize: '11px', padding: '3px 8px' }} onClick={() => undoDisqualify(idx)}>Undo DQ</button>
+                                                ) : (
+                                                    <button className="btn btn-sm" style={{ fontSize: '11px', padding: '3px 8px', color: 'var(--danger)' }} onClick={() => setRetroDQ(retroDQ && retroDQ.index === idx ? null : { index: idx, reason: '' })}>DQ</button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                        {retroDQ && retroDQ.index === idx && (
+                                            <tr><td colSpan={99} style={{ padding: '0', background: 'var(--danger-light)' }}>
+                                                <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                                                    <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--danger)' }}>DQ Visitor #{idx + 1}:</span>
+                                                    <input type="text" value={retroDQ.reason} onChange={e => setRetroDQ({ ...retroDQ, reason: e.target.value })} placeholder="Reason (optional)" style={{ flex: 1, minWidth: '150px', padding: '6px 10px', fontSize: '13px', borderColor: 'var(--danger-border)' }} onKeyDown={e => { if (e.key === 'Enter') retroDisqualify(idx, retroDQ.reason); }} />
+                                                    <button className="btn btn-danger btn-sm" onClick={() => retroDisqualify(idx, retroDQ.reason)}>Confirm DQ</button>
+                                                    <button className="btn btn-sm" onClick={() => setRetroDQ(null)}>Cancel</button>
+                                                </div>
+                                            </td></tr>
+                                        )}
+                                        </React.Fragment>
+                                    ))}</tbody></table>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </>
+            );
+        }
+        function VisitorForm({ project, visitorData, setVisitorData, onSave, onCancel, timerRunning }) {
+            const [recording, setRecording] = useState({});
+            const recRef = useRef({});
+            const startDict = (fid) => {
+                if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return;
+                const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const r = new SR(); r.continuous = true; r.interimResults = true;
+                r.onresult = (e) => { let t = ''; for (let i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript; setVisitorData(prev => ({ ...prev, [fid]: (prev[fid] || '') + ' ' + t })); };
+                r.onerror = () => setRecording(p => ({ ...p, [fid]: false }));
+                r.onend = () => setRecording(p => ({ ...p, [fid]: false }));
+                r.start(); recRef.current[fid] = r; setRecording(p => ({ ...p, [fid]: true }));
+            };
+            const stopDict = (fid) => { if (recRef.current[fid]) { recRef.current[fid].stop(); setRecording(p => ({ ...p, [fid]: false })); } };
+
+            return (
+                <div>
+                    {project.fields.map(f => (
+                        <div key={f.id} className="form-group">
+                            <label>{f.name}</label>
+                            {f.type === 'text' && <input type="text" value={visitorData[f.id] || ''} onChange={e => setVisitorData({...visitorData, [f.id]: e.target.value})} />}
+                            {f.type === 'number' && <input type="number" value={visitorData[f.id] || ''} onChange={e => setVisitorData({...visitorData, [f.id]: e.target.value})} />}
+                            {f.type === 'select' && <select value={visitorData[f.id] || ''} onChange={e => setVisitorData({...visitorData, [f.id]: e.target.value})}><option value="">Select...</option>{f.options.map(o => <option key={o} value={o}>{o}</option>)}</select>}
+                            {f.type === 'checkbox' && <div>{f.options.map(o => { const sel = visitorData[f.id] || []; const on = sel.includes(o.label); const w = dqWhenOf(o); const hit = (w === 'checked' && on) || (w === 'unchecked' && !on && !timerRunning); return (
+                                <label key={o.label} className="checkbox-label" style={{ marginBottom: '8px', fontSize: '14px', ...(w ? { color: 'var(--danger)', background: hit ? 'var(--danger-light)' : 'transparent', border: '1px solid var(--danger-border)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', fontWeight: hit ? 700 : 500 } : {}) }}>
+                                    <input type="checkbox" checked={on} onChange={() => setVisitorData({ ...visitorData, [f.id]: on ? sel.filter(x => x !== o.label) : [...sel, o.label] })} />
+                                    {o.label}{w && <span style={{ fontSize: '11px', marginLeft: '6px', fontWeight: 600 }}>{w === 'checked' ? '(disqualifies if checked)' : '(disqualifies if NOT checked)'}</span>}
+                                </label>); })}</div>}
+                            {f.type === 'textarea' && (<>
+                                <textarea value={visitorData[f.id] || ''} onChange={e => setVisitorData({...visitorData, [f.id]: e.target.value})} />
+                                {f.dictation && <div className="dictation-controls">
+                                    {!recording[f.id] ? <button className="btn btn-primary btn-sm" onClick={() => startDict(f.id)}>{'\uD83C\uDFA4'} Dictation</button>
+                                    : <><button className="btn btn-danger btn-sm" onClick={() => stopDict(f.id)}>{'\u23F9'} Stop</button><span className="recording">{'\u25CF'} Recording...</span></>}
+                                </div>}
+                            </>)}
+                        </div>
+                    ))}
+                    <div className="button-group">
+                        <button className="btn btn-success" onClick={onSave}>Save Visitor Data</button>
+                        <button className="btn" onClick={onCancel}>Cancel</button>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
